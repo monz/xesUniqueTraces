@@ -1,6 +1,8 @@
-import org.deckfour.xes.classification.XEventClassifier;
-import org.deckfour.xes.extension.XExtension;
-import org.deckfour.xes.model.XEvent;
+import com.google.common.base.Charsets;
+import com.google.common.hash.HashCode;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hasher;
+import com.google.common.hash.Hashing;
 import org.deckfour.xes.model.XLog;
 import org.deckfour.xes.model.XTrace;
 import org.deckfour.xes.model.XVisitor;
@@ -9,17 +11,24 @@ import org.deckfour.xes.out.XesXmlSerializer;
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class Visitor extends XVisitor {
     private XLog log;
     private Map<String, XTrace> uniqueTraces;
     private String resultFile;
+    private ExecutorService executor;
+    private List<Future<AbstractMap.SimpleEntry<String, XTrace>>> futures;
 
     public Visitor(String resultFile) {
         uniqueTraces = new HashMap<>();
+        executor = Executors.newFixedThreadPool(2);
+        futures = new ArrayList<>();
         this.resultFile = resultFile;
+        System.out.println("constructor");
     }
 
     @Override
@@ -28,52 +37,25 @@ public class Visitor extends XVisitor {
     }
 
     @Override
-    public void visitExtensionPre(XExtension ext, XLog log) {
-        super.visitExtensionPre(ext, log);
-    }
-
-    @Override
-    public void visitClassifierPre(XEventClassifier classifier, XLog log) {
-        super.visitClassifierPre(classifier, log);
-    }
-
-    @Override
-    public void visitTracePre(XTrace trace, XLog log) {
-        super.visitTracePre(trace, log);
-
-        //System.out.println("--- trace start ---");
-        //trace.getAttributes().forEach((key, attr) -> System.out.println(attr));
-    }
-
-    @Override
     public void visitTracePost(XTrace trace, XLog log) {
         super.visitTracePost(trace, log);
 
-        XTraceImplHashed t = new XTraceImplHashed(trace);
-        t.getHash();
+        HashFunction hf = Hashing.md5();
+        Hasher h = hf.newHasher();
+        trace.forEach(xEvent -> xEvent.getAttributes()
+            .entrySet().stream()
+            .filter(e -> e.getKey().equals("concept:name"))
+            .forEach(e2 -> h.putString(e2.getValue().toString(), Charsets.UTF_8)));
 
-        uniqueTraces.putIfAbsent(t.getHash(), t);
-        //System.out.println("--- trace end ---");
-    }
-
-    @Override
-    public void visitEventPre(XEvent event, XTrace trace) {
-        super.visitEventPre(event, trace);
-
-        //event.getAttributes().entrySet().stream()
-        //    .filter(e -> e.getKey().equals("concept:name"))
-        //    .forEach(e2 -> System.out.println(e2.getValue()));
+        HashCode hc = h.hash();
+        uniqueTraces.putIfAbsent(hc.toString(), trace);
     }
 
     @Override
     public void visitLogPost(XLog log) {
         super.visitLogPost(log);
 
-        uniqueTraces.forEach((k, t) -> {
-            if (t instanceof XTraceImplHashed) {
-                System.out.println(((XTraceImplHashed) t).getHash());
-            }
-        });
+        //uniqueTraces.forEach((k, t) -> System.out.println(k));
 
         System.out.println("Log size: " + log.size());
         System.out.println("Unique log size: " + uniqueTraces.size());
@@ -83,7 +65,6 @@ public class Visitor extends XVisitor {
         log.clear();
         // clone metadata
         XLog uniqueLog = (XLog) log.clone();
-        //uniqueLog.clear();
         // add unique traces
         uniqueLog.addAll(uniqueTraces.values());
 

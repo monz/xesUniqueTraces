@@ -7,16 +7,10 @@ import java.io.FileInputStream;
 import java.util.List;
 
 public class main {
-    //private static String xesPath = "/home/markus/Desktop/example.xes";
-    //private static String xesPath = "/home/markus/Desktop/example2.xes";
-    //private static String xesPath = "/home/markus/Desktop/testo.xes";
-
-    //private static String resultPath = "/home/markus/Desktop/unique.xes";
-
     public static void main(String[] args) {
 
         if (args.length < 2) {
-            System.out.println("Please specify in/out file: uniqueTraces.jar <inXES> <outXES>");
+            System.out.println("Please specify in/out file: xesUniqueTraces.jar <inXES> <outXES>");
             System.exit(-1);
         }
 
@@ -24,12 +18,15 @@ public class main {
         String resultPath = args[1];
 
         XesXmlParser parser = new XesXmlParser();
+        //XesLiteXmlParser parser = new XesLiteXmlParser(false);
 
         File xesFile = new File(xesPath);
         if (! parser.canParse(xesFile)) {
             System.exit(-1);
         }
 
+        Long start, stop;
+        start = System.currentTimeMillis();
         List<XLog> res = null;
         try {
             res = parser.parse(new BufferedInputStream(new FileInputStream(xesFile)));
@@ -37,19 +34,15 @@ public class main {
             e.printStackTrace();
             System.exit(-1);
         }
+        stop = System.currentTimeMillis();
+        System.out.println("Document parsed in " + (stop - start) + " millis.");
 
+        start = System.currentTimeMillis();
         if (res != null) {
             Visitor v = new Visitor(resultPath);
             res.forEach(l -> l.accept(v));
-
-//            System.out.println("GlobalTraceAttributes:");
-//            res.forEach(e -> e.getGlobalTraceAttributes().forEach(i -> i.getKey()));
-//            System.out.println("GlobalEventAttributes:");
-//            res.forEach(e -> e.getGlobalEventAttributes().forEach(i -> i.getKey()));
-//            System.out.println("Classifiers:");
-//            res.forEach(e -> e.getClassifiers().forEach(i -> System.out.println(i.name())));
-//            System.out.println("getInfo:");
-//            res.forEach(e -> e.forEach(t -> t.getAttributes().forEach((s, xAttribute) -> System.out.println(xAttribute.))));
         }
+        stop = System.currentTimeMillis();
+        System.out.println("Unique traces calculated in " + (stop - start) + " millis.");
     }
 }

@@ -2,10 +2,11 @@
   <artifact type="jar" name="xesToUniqueCases:jar">
     <output-path>$PROJECT_DIR$/out/artifacts/xesToUniqueCases_jar</output-path>
     <root id="archive" name="xesToUniqueCases.jar">
-      <element id="module-output" name="xesToUniqueCases" />
+      <element id="module-output" name="xesUniqueTraces" />
       <element id="extracted-dir" path="$PROJECT_DIR$/lib/Spex.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$PROJECT_DIR$/lib/OpenXES.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$PROJECT_DIR$/lib/guava-18.0.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/xeslite-0.0.1.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$PROJECT_DIR$/lib/guava-18.0-javadoc.jar" path-in-jar="/" />
     </root>
   </artifact>
